@@ -1,11 +1,9 @@
-conda install -c anaconda keras
-conda install -c anaconda pandas
-conda install -c anaconda numpy
-conda install -c anaconda scikit-learn
-
-conda install gcc
-conda install -c conda-forge fbprophet install -c anaconda numpy
-conda install -c anaconda scikit-learn
-
-conda install gcc
-conda install -c conda-forge fbprophet
+conda install -c anaconda keras<br/>
+conda install -c anaconda pandas<br/>
+conda install -c anaconda numpy<br/>
+conda install -c anaconda scikit-learn<br/>
+conda install gcc<br/>
+conda install -c conda-forge fbprophet install -c anaconda numpy<br/>
+conda install -c anaconda scikit-learn<br/>
+conda install gcc<br/>
+conda install -c conda-forge fbprophet<br/>
