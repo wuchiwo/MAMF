@@ -6,7 +6,6 @@ from sklearn.preprocessing import MinMaxScaler
 
 import config as c
 
-
 df=pd.read_csv(c.data_file)
 model = md.load_model(c.model_file)
 sc = MinMaxScaler(feature_range = (0, 1))
@@ -16,13 +15,8 @@ dataset_test = df.iloc[c.train_size:, c.data_columns]
 dataset_total = pd.concat((dataset_train, dataset_test), axis = 0)
 
 inputs = dataset_total[len(dataset_total) - len(dataset_test) - c.lookback:].values
-
-print(inputs.shape)
-
 inputs = inputs.reshape(-1,1)
 inputs = sc.fit_transform(inputs)
-
-print(inputs.shape)
 
 x_test = []
 for i in range(c.lookback, inputs.size):
