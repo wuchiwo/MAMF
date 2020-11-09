@@ -1,13 +1,15 @@
-os: ubuntu
-python: anaconda with python 3.7
-ide: vscode
-<br/>
-Required Libraries<br/>
-conda install -c anaconda keras<br/>
-conda install -c anaconda pandas<br/>
-conda install -c anaconda numpy<br/>
-conda install -c anaconda scikit-learn<br/>
-<br/>
-Option libraries<br/>
-conda install gcc<br/>
-conda install -c conda-forge fbprophet<br/>
+## Prerequisite
+* Ubuntu 18.04.5 LTS
+* Visual Studio Code
+* Anaconda
+* Python 3.7
+
+## Required Libraries
+```
+conda install -c anaconda keras
+conda install -c anaconda pandas
+conda install -c anaconda numpy
+conda install -c anaconda scikit-learn
+conda install gcc
+conda install -c conda-forge fbprophet>
+```
