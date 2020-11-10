@@ -40,3 +40,17 @@ plt.xlabel('Time')
 plt.ylabel(c.stock + ' ' + c.predict_key )
 plt.legend()
 plt.show()
+
+# Save to .csv for further uses
+f = open("./data/predict-"+c.stock+".csv", "w")
+dates = []
+f.write('time,value\n')
+for entry in (df.values.tolist()):
+    dates.append(entry[0])
+
+for i in range(train_size):
+    f.write(dates[i] + ',' + str(total_set.values.tolist()[i][4]) + '\n')
+
+for i in range(len(predict_value)):
+    f.write(dates[i+train_size] + ',' + str(predict_value[i]) + '\n')
+f.close()
