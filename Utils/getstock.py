@@ -17,8 +17,9 @@ def saveOptions(stockcode) :
         calls.to_csv("../data/"+stockcode+"/"+stockcode +
                      '_call_'+opt+'.csv', mode='a+')
 
-
-dir = os.path.join("../data", "TSLA")
-if not os.path.exists(dir):
-    os.mkdir(dir)
-saveOptions("TSLA")
+# test code
+def test():
+    dir = os.path.join("../data", "TSLA")
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    saveOptions("TSLA")
