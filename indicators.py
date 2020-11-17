@@ -19,6 +19,10 @@ class Indicator:
             self.data['26EMA'] = self.data['value'].ewm(span=26, adjust=False).mean()
             self.data['12EMA'] = self.data['value'].ewm(span=12, adjust=False).mean()
             self.data['MACD'] = self.data['12EMA'] - self.data['26EMA']# - self.data['9EMA']
+            self.data['L_n'] = self.data['value'].rolling(window=9).min()
+            self.data['H_n'] = self.data['value'].rolling(window=9).max()
+            self.data['C_n'] = self.data['value'].rolling(window=1).min()
+            self.data['RSV_n'] = (self.data['C_n'] - self.data['L_n']) / (self.data['H_n'] - self.data['L_n']) * 100
 
     def bollinger(self, show=False):
         for idx, item in self.data.iterrows():
@@ -75,8 +79,30 @@ class Indicator:
             plt.ylabel('Left - Value; Right - red=sell, blue=buy, green=macd')
             plt.show()
     
-    def kdj(self):
-        pass # Needs a full daily Hi/Lo values
+    def kdj(self, show=False):
+        for idx, item in self.data.iterrows():
+            try:
+                self.data.loc[idx, 'K_n'] = 2/3 * self.data.loc[idx-1, 'K_n'] + 1/3 * self.data.loc[idx, 'RSV_n']
+                self.data.loc[idx, 'D_n'] = 2/3 * self.data.loc[idx-1, 'D_n'] + 1/3 * self.data.loc[idx, 'K_n']
+                self.data.loc[idx, 'J_n'] = 3 * self.data.loc[idx, 'K_n'] - 2 * self.data.loc[idx, 'D_n']
+                if pd.isnull(self.data.loc[idx, 'K_n']) or pd.isnull(self.data.loc[idx, 'D_n'])  or pd.isnull(self.data.loc[idx, 'J_n']):
+                    raise Exception
+                self.data.loc[idx, 'KDJ_Buy'] = self.data.loc[idx-1, 'K_n'] < self.data.loc[idx-1, 'D_n'] and self.data.loc[idx, 'K_n'] > self.data.loc[idx, 'D_n']
+                self.data.loc[idx, 'KDJ_Sell'] = self.data.loc[idx-1, 'K_n'] > self.data.loc[idx-1, 'D_n'] and self.data.loc[idx, 'K_n'] < self.data.loc[idx, 'D_n']
+            except:
+                self.data.loc[idx, 'K_n'] = 50
+                self.data.loc[idx, 'D_n'] = 50
+                self.data.loc[idx, 'J_n'] = 50
+                self.data.loc[idx, 'KDJ_Buy'] = None       
+                self.data.loc[idx, 'KDJ_Sell'] = None    
+        if show == True:
+            self.data[['value', 'K_n', 'D_n', 'J_n']].plot(figsize=(12,6))
+            plt2 = plt.twinx()
+            plt2.plot(self.data['KDJ_Buy'], 'bo', markersize=1)
+            plt2.plot(self.data['KDJ_Sell'], 'ro', markersize=1)
+            plt.title('MA')
+            plt.ylabel('Left - Value; Right - red=sell, blue=buy')
+            plt.show()               
     
     def ma(self, show=False):
         for idx, item in self.data.iterrows():
@@ -125,7 +151,8 @@ def main():
     #x.mean_reversion(0.09, True)
     #x.macd(True)
     #x.ma(True)
-    x.rsi(14, True)
+    #x.rsi(14, True)
+    x.kdj(True)
 
-
-main()
+if __name__ == '__main__':
+    main()
