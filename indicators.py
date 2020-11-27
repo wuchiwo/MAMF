@@ -87,8 +87,8 @@ class Indicator:
                 self.data.loc[idx, 'J_n'] = 3 * self.data.loc[idx, 'K_n'] - 2 * self.data.loc[idx, 'D_n']
                 if pd.isnull(self.data.loc[idx, 'K_n']) or pd.isnull(self.data.loc[idx, 'D_n'])  or pd.isnull(self.data.loc[idx, 'J_n']):
                     raise Exception
-                self.data.loc[idx, 'KDJ_Buy'] = self.data.loc[idx-1, 'K_n'] < self.data.loc[idx-1, 'D_n'] and self.data.loc[idx, 'K_n'] > self.data.loc[idx, 'D_n']
-                self.data.loc[idx, 'KDJ_Sell'] = self.data.loc[idx-1, 'K_n'] > self.data.loc[idx-1, 'D_n'] and self.data.loc[idx, 'K_n'] < self.data.loc[idx, 'D_n']
+                self.data.loc[idx, 'KDJ_Sell'] = self.data.loc[idx-1, 'K_n'] < self.data.loc[idx-1, 'D_n'] and self.data.loc[idx, 'K_n'] > self.data.loc[idx, 'D_n']
+                self.data.loc[idx, 'KDJ_Buy'] = self.data.loc[idx-1, 'K_n'] > self.data.loc[idx-1, 'D_n'] and self.data.loc[idx, 'K_n'] < self.data.loc[idx, 'D_n']
             except:
                 self.data.loc[idx, 'K_n'] = 50
                 self.data.loc[idx, 'D_n'] = 50
@@ -151,8 +151,8 @@ def main():
     #x.mean_reversion(0.09, True)
     #x.macd(True)
     #x.ma(True)
-    #x.rsi(14, True)
-    x.kdj(True)
+    x.rsi(14, True)
+    #x.kdj(True)
 
 if __name__ == '__main__':
     main()

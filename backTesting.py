@@ -1,5 +1,5 @@
 from backtesting import Backtest, Strategy
-from indicator import Indicator
+from indicators import Indicator
 import pandas as pd
 import numpy as np
 
