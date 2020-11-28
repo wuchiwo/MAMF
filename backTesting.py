@@ -1,5 +1,5 @@
 from backtesting import Backtest, Strategy
-from indicators import Indicator
+from indicators import Indicator, Indikeppar
 import pandas as pd
 import numpy as np
 
@@ -22,24 +22,59 @@ def LOAD(arr):
 
 
 # strategy for KDJ
-class KDJstrategy(Strategy):
+class UnifiedStrategy(Strategy):
     def init(self):
         x = Indicator('data/predict-0027.HK.csv')
+        x.bollinger(2.5)
+        x.mean_reversion(0.09)
+        x.macd(False, window=1, trend_ma=5)
+        x.ma()
+        x.rsi(14,2)
         x.kdj()
+        x2 = Indikeppar('data/predict-0027.HK.csv','data/predict-0088.HK.csv')
+        x2.keppar(20, 10)
 
-        #
         # Input: array of the buy&sell signal
-        #
+        # BOLLINGER
+        self.buyS_boll = x.data['Bollinger_Buy'].to_numpy()
+        self.sellS_boll = x.data['Bollinger_Sell'].to_numpy()
+        self.s_boll = self.I(LOAD, self.sellS_boll, name='sellSIGNAL_BOLL')
+        self.b_boll = self.I(LOAD, self.buyS_boll, name='buySIGNAL_BOLL')
 
-        self.buyS = x.data['KDJ_Buy'].to_numpy()
-        self.sellS = x.data['KDJ_Sell'].to_numpy()
-        self.s = self.I(LOAD, self.sellS, name='sellSIGNAL')
-        self.b = self.I(LOAD, self.buyS, name='buySIGNAL')
+        # MACD
+        self.buyS_macd = x.data['MACD_Buy'].to_numpy()
+        self.sellS_macd = x.data['MACD_Sell'].to_numpy()
+        self.s_macd = self.I(LOAD, self.sellS_macd, name='sellSIGNAL_macd')
+        self.b_macd = self.I(LOAD, self.buyS_macd, name='buySIGNAL_macd')
+
+        # RSI
+        self.buyS_rsi = x.data['RSI_Buy'].to_numpy()
+        self.sellS_rsi = x.data['RSI_Sell'].to_numpy()
+        self.s_rsi = self.I(LOAD, self.sellS_rsi, name='sellSIGNAL_rsi')
+        self.b_rsi = self.I(LOAD, self.buyS_rsi, name='buySIGNAL_rsi')
+
+        # KDJ
+        self.buyS_kdj = x.data['KDJ_Buy'].to_numpy()
+        self.sellS_kdj = x.data['KDJ_Sell'].to_numpy()
+        self.s_kdj = self.I(LOAD, self.sellS_kdj, name='sellSIGNAL_kdj')
+        self.b_kdj = self.I(LOAD, self.buyS_kdj, name='buySIGNAL_kdj')
+
+        # keppar
+        self.buyS_keppar = x2.data['keppar_Buy'].to_numpy()
+        self.sellS_keppar = x2.data['keppar_Sell'].to_numpy()
+        self.s_keppar = self.I(LOAD, self.sellS_keppar, name='sellSIGNAL_keppar')
+        self.b_keppar = self.I(LOAD, self.buyS_keppar, name='buySIGNAL_keppar')
+
+        # signal weighting
+        self.s = 0
+        self.b = 0
+        self.s += 0 * self.s_boll + 0 * self.s_macd + 0 * self.s_rsi + 0 * self.s_kdj + 1 * self.s_keppar
+        self.b += 0 * self.b_boll + 0 * self.b_macd + 0 * self.b_rsi + 0 * self.b_kdj + 1 * self.b_keppar
 
     def next(self):
-        if self.s == 1:
+        if self.s >= 1:
             self.sell()
-        elif self.b == 1:
+        elif self.b >= 1:
             self.buy()
 
 
@@ -50,7 +85,7 @@ if __name__ == '__main__':
 
     # Use the backtest function to get the represent your buy&sell process
     # You can change your strategy for the backtesting
-    bt = Backtest(stockData, KDJstrategy, cash=10000, commission=.002, exclusive_orders=True)
+    bt = Backtest(stockData, UnifiedStrategy, cash=10000, commission=.002, exclusive_orders=True)
     stats = bt.run()
     bt.plot()
     print(stats)
