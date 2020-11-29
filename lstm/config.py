@@ -1,20 +1,18 @@
-stock = '0027.HK'
-data_file = 'data/' + stock + '.csv'
-model_file = 'lstm/model/' + stock + '.model'
+stock = 'Equities_27'
+data_file = 'data/' + stock +'.csv'
+predict_file = 'predict/' + stock + '.csv'
+model_dir = 'lstm/model/' + stock + '/'
 
 feature_keys = [
-    'Open',
-    'High',
-    'Low',
-    'Close',
-    'Adj Close',
-    'Volume',
+    'Last Trade',
+    'Volume'
 ]
 
-predict_key = 'Open'
-date_key = 'Date'
+predict_key = 'Last Trade'
+date_key = 'Time'
 
-split_fraction = 0.715
-lookback = 60
+split_fraction = 0.85
+past = 60
+future = 3
 epochs = 100
-batch_size = 32
+batch_size = 512
