@@ -2,16 +2,34 @@ from backtesting import Backtest, Strategy
 from indicators import Indicator, Indikeppar
 import pandas as pd
 import numpy as np
+import csv
 
 limit_data = 2000
+def removeBreakTimes(path):
+    outpath = './temp.csv'
+    input = open(path, 'r')
+    output = open(outpath, 'w', newline='')
+    writer = csv.writer(output)
+    for row in csv.reader(input):
+        if "12:" not in row[0]:
+            writer.writerow(row)
+    input.close()
+    output.close()
+    return outpath
 
 def loadStockData(path):
     # load the data, generate a DataFrame with the data time for index
     readCSV = pd.read_csv(path)
+
     maindata = readCSV.to_numpy()[:, 1:].astype(np.float32)
+    # Adjust the format to match Backtesting requirements (see pd.Dataframe())
     maindata_adjusted = np.zeros((len(maindata),6))
-    for i in range(6):
-        maindata_adjusted[:,i] = maindata[:,0]
+    for i in range(1,len(maindata)):
+        maindata_adjusted[i,3] = maindata[i,0]
+        maindata_adjusted[i,0] = maindata[i-1,0]
+        maindata_adjusted[i,1] = max(maindata_adjusted[i,0], maindata_adjusted[i,3])
+        maindata_adjusted[i,2] = min(maindata_adjusted[i,0], maindata_adjusted[i,3])
+        maindata_adjusted[i,4] = maindata_adjusted[i,3]
     maindata_adjusted[:,5] = maindata[:,1]
     # LIMIT ROWS TO limit_data
     maindata_adjusted = maindata_adjusted[-limit_data:]
@@ -33,10 +51,10 @@ class UnifiedStrategy(Strategy):
     def init(self):
         x = Indicator('./data/Equities_27.csv',limit_data)
         x.bollinger(2.5)
-        x.mean_reversion(0.09)
-        x.macd(False, window=1, trend_ma=5)
-        x.ma()
-        x.rsi(14,2)
+        #x.mean_reversion(0.09)
+        x.macd(False, window=20, trend_ma=100)
+        #x.ma()
+        x.rsi(14,20)
         x.kdj()
         x2 = Indikeppar('./data/Equities_27.csv','./data/Equities_200.csv',limit_data)
         x2.keppar(20, 10)
@@ -75,8 +93,8 @@ class UnifiedStrategy(Strategy):
         # signal weighting
         self.s = 0
         self.b = 0
-        self.s += 0 * self.s_boll + 0 * self.s_macd + 0 * self.s_rsi + 0 * self.s_kdj + 1 * self.s_keppar
-        self.b += 0 * self.b_boll + 0 * self.b_macd + 0 * self.b_rsi + 0 * self.b_kdj + 1 * self.b_keppar
+        self.s += 0 * self.s_boll + 0 * self.s_macd + 0 * self.s_rsi + 1 * self.s_kdj + 0 * self.s_keppar
+        self.b += 0 * self.b_boll + 0 * self.b_macd + 0 * self.b_rsi + 1 * self.b_kdj + 0 * self.b_keppar
 
     def next(self):
         if self.s >= 1:
@@ -85,9 +103,11 @@ class UnifiedStrategy(Strategy):
             self.buy()
 
 if __name__ == '__main__':
+    path = './data/Equities_27.csv'
+    path = removeBreakTimes(path)
     # Load your stock data through this function
     # The data must contain value of 'Open','High','Low','Close', although you may not use it for strategy
-    stockData = loadStockData('./data/Equities_27.csv')
+    stockData = loadStockData(path)
 
     # Use the backtest function to get the represent your buy&sell process
     # You can change your strategy for the backtesting

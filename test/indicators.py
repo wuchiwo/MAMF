@@ -5,7 +5,6 @@ import math
 
 pd.set_option('display.min_rows', 255)
 
-
 class Indikeppar:
     def __init__(self, filename, filename_comparison, limit=0):
         self.data = pd.read_csv(filename)
@@ -293,17 +292,17 @@ class Indicator:
 
 
 def main():
-    filename = "./data/predict-0027.HK.csv"
+    filename = "./data/Equities_200.csv"
     filename_c = "./data/predict-0088.HK.csv"
-    # x = Indicator(filename)
-    # x.bollinger(1.5, True)
-    # x.mean_reversion(0.09, True)
-    # x.macd(True)
-    # x.ma(True)
-    # x.rsi(14, 20, show=True)
-    # x.kdj(True)
-    x2 = Indikeppar(filename, filename_c)
-    x2.keppar(draw=True)
+    x = Indicator(filename,limit=2000)
+    #x.bollinger(1.5, True)
+    #x.mean_reversion(0.09, True)
+    x.macd(True,14,100)
+    #x.ma(True)
+    #x.rsi(14, 20, show=True)
+    #x.kdj(True)
+    #x2 = Indikeppar(filename, filename_c)
+    #x2.keppar(draw=True)
 
 
 if __name__ == '__main__':
