@@ -3,35 +3,42 @@ from indicators import Indicator, Indikeppar
 import pandas as pd
 import numpy as np
 
+limit_data = 2000
 
 def loadStockData(path):
     # load the data, generate a DataFrame with the data time for index
     readCSV = pd.read_csv(path)
     maindata = readCSV.to_numpy()[:, 1:].astype(np.float32)
-    dates = readCSV.to_numpy()[:, 0]
+    maindata_adjusted = np.zeros((len(maindata),6))
+    for i in range(6):
+        maindata_adjusted[:,i] = maindata[:,0]
+    maindata_adjusted[:,5] = maindata[:,1]
+    # LIMIT ROWS TO limit_data
+    maindata_adjusted = maindata_adjusted[-limit_data:]
 
-    stock = pd.DataFrame(maindata, index=pd.DatetimeIndex(dates),
+    dates = readCSV.to_numpy()[:, 0]
+    dates_adjusted = dates[-limit_data:]
+
+    stock = pd.DataFrame(maindata_adjusted, index=pd.DatetimeIndex(dates_adjusted),
                          columns=['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume'])
     return stock
-
 
 def LOAD(arr):
     # simple function transfer the buy and sell signal to _indicator array
     arr = pd.Series(arr.tolist())
     return pd.Series(arr)
 
-
 # strategy for KDJ
 class UnifiedStrategy(Strategy):
     def init(self):
-        x = Indicator('data/predict-0027.HK.csv')
+        x = Indicator('./data/Equities_27.csv',limit_data)
         x.bollinger(2.5)
         x.mean_reversion(0.09)
         x.macd(False, window=1, trend_ma=5)
         x.ma()
         x.rsi(14,2)
         x.kdj()
-        x2 = Indikeppar('data/predict-0027.HK.csv','data/predict-0088.HK.csv')
+        x2 = Indikeppar('./data/Equities_27.csv','./data/Equities_200.csv',limit_data)
         x2.keppar(20, 10)
 
         # Input: array of the buy&sell signal
@@ -77,11 +84,10 @@ class UnifiedStrategy(Strategy):
         elif self.b >= 1:
             self.buy()
 
-
 if __name__ == '__main__':
     # Load your stock data through this function
     # The data must contain value of 'Open','High','Low','Close', although you may not use it for strategy
-    stockData = loadStockData('data/0027.HK.csv')
+    stockData = loadStockData('./data/Equities_27.csv')
 
     # Use the backtest function to get the represent your buy&sell process
     # You can change your strategy for the backtesting
@@ -89,5 +95,3 @@ if __name__ == '__main__':
     stats = bt.run()
     bt.plot()
     print(stats)
-
-
