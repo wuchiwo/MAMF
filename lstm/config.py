@@ -6,7 +6,10 @@ model_dir = './lstm/model/' + stock + '/'
 feature_keys = [
     'Last Trade',
     'Volume',
-    'SMA'
+    'MA5',
+    'MA10',
+    'MA20',
+    'VOL'
 ]
 
 predict_key = 'Last Trade'
@@ -15,5 +18,5 @@ date_key = 'Time'
 split_fraction = 0.85
 past = 798
 future = 60
-epochs = 100 #500
+epochs = 100 #100 #500
 batch_size = 512

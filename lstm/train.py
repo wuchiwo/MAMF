@@ -13,8 +13,6 @@ for gpu in  tf.config.experimental.list_physical_devices('GPU'):
 df = pd.read_csv(cfg.data_file)
 sc = MinMaxScaler(feature_range=(0, 1))
 
-df['SMA'] = df['Last Trade'].rolling(window=cfg.past).mean().fillna(0)
-
 train_size = int(cfg.split_fraction * int(df.shape[0]))
 train_set = df.loc[:train_size - 1, cfg.feature_keys].values
 train_set_scaled = sc.fit_transform(train_set)
