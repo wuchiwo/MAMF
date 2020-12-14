@@ -93,8 +93,8 @@ class UnifiedStrategy(Strategy):
         # signal weighting
         self.s = 0
         self.b = 0
-        self.s += 0 * self.s_boll + 0 * self.s_macd + 0 * self.s_rsi + 1 * self.s_kdj + 0 * self.s_keppar
-        self.b += 0 * self.b_boll + 0 * self.b_macd + 0 * self.b_rsi + 1 * self.b_kdj + 0 * self.b_keppar
+        self.s += 0 * self.s_boll + 0 * self.s_macd + 0 * self.s_rsi + 0 * self.s_kdj + 1 * self.s_keppar
+        self.b += 0 * self.b_boll + 0 * self.b_macd + 0 * self.b_rsi + 0 * self.b_kdj + 1 * self.b_keppar
 
     def next(self):
         if self.s >= 1:

@@ -12,4 +12,6 @@ conda install -c anaconda pandas
 conda install -c anaconda numpy
 conda install -c anaconda scikit-learn
 conda install -c anaconda xlrd
+pip install Backtesting
+conda install -c anaconda pandas-datareader
 ```
