@@ -33,18 +33,19 @@ temp_set = np.zeros(shape=(len(predict_value_scaled), len(cfg.feature_keys)))
 temp_set[:, predict_key_index] = predict_value_scaled[:, predict_key_index]
 predict_value = sc.inverse_transform(temp_set)[:, predict_key_index]
 
-predict_date_key = 'Future'
-predict_set = pd.DataFrame(columns = [cfg.date_key, predict_date_key, cfg.predict_key])
+new_predict_key = 'Predicted ' + cfg.predict_key
+predict_set = pd.DataFrame(columns = [cfg.date_key, cfg.predict_key, new_predict_key])
 predict_set[cfg.date_key] = df.loc[train_size:, cfg.date_key]
-predict_set[predict_date_key] = pd.to_datetime(df.loc[train_size:, cfg.date_key]) + pd.Timedelta(pd.offsets.Minute(cfg.future))
-predict_set[cfg.predict_key] = predict_value
+predict_set[cfg.predict_key] =  test_set.values[:, predict_key_index]
+predict_set[new_predict_key] = predict_value
+predict_set[new_predict_key] = predict_set[new_predict_key].shift(periods=cfg.future)
 predict_set.to_csv(path_or_buf=cfg.predict_file, index=False)
 
-plt.plot(df.loc[train_size:, cfg.date_key], test_set.values[:, predict_key_index],
+plt.plot(predict_set[cfg.date_key], predict_set[cfg.predict_key],
          color='red', label='Real ' + cfg.stock + ' ' + cfg.predict_key)
-plt.plot(pd.to_datetime(df.loc[train_size:, cfg.date_key]) + pd.Timedelta(pd.offsets.Minute(cfg.future)) , predict_value,
+plt.plot(predict_set[cfg.date_key] , predict_set[new_predict_key],
          color='blue', label='Predicted ' + cfg.stock + ' ' + cfg.predict_key)
-plt.xticks(np.arange(0, test_set.shape[0], test_set.shape[0] / 10), rotation=45)
+plt.xticks(np.arange(0, predict_set.shape[0], predict_set.shape[0] / 10), rotation=45)
 plt.title(cfg.stock + ' ' + cfg.predict_key + ' Prediction')
 plt.xlabel('Time')
 plt.ylabel(cfg.stock + ' ' + cfg.predict_key)
