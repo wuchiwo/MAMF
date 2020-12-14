@@ -13,6 +13,8 @@ df = pd.read_csv(cfg.data_file)
 model = md.load_model(cfg.model_dir)
 sc = MinMaxScaler(feature_range=(0, 1))
 
+df['SMA'] = df['Last Trade'].rolling(window=cfg.past).mean().fillna(0)
+
 train_size = int(cfg.split_fraction * int(df.shape[0]))
 predict_key_index = df.columns.get_loc(cfg.predict_key) - 1
 
