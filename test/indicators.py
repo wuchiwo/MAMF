@@ -5,99 +5,6 @@ import math
 
 pd.set_option('display.min_rows', 255)
 
-class Indikeppar:
-    def __init__(self, filename, filename_comparison, limit=0):
-        self.data = pd.read_csv(filename)
-        self.data_comparison = pd.read_csv(filename_comparison)
-        # Limit input to limit
-        if limit != 0:
-            self.data = self.data[-limit:]
-            self.data_comparison = self.data_comparison[-limit:]
-
-    def calculateP(self, type, idx, T):
-        P = 1
-        if type == 'A':
-            for i in range(T+1):
-                P *= (1 + self.data.loc[idx - i, 'R'])
-        else:
-            for i in range(T+1):
-                P *= (1 + self.data_comparison.loc[idx - i, 'R'])
-        return math.log(P)
-
-    def calculateS(self, idx, T):
-        S = self.calculateP('A', idx, T) - self.calculateP('B', idx, T)
-        return S
-
-    def calculateMiu(self, idx, t, T):
-        miu = 0
-        for i in range(t, T+1):
-            miu += self.calculateS(idx, i) / (T-t+1)
-        return miu
-
-    def calculateSigma(self, idx, t, T):
-        miu = self.calculateMiu(idx, t, t)
-        sigma = 0
-        for i in range(t, T+1):
-            sigma += (self.calculateS(idx, i) - miu) / (T-t+1)
-        return sigma
-
-    def calculateTtest(self, idx, t, T):
-        self.data.loc[idx, 'tTest'] = (self.calculateS(idx, T) - self.calculateMiu(idx, t, T)) \
-                                      / self.calculateSigma(idx, t, T)
-
-    def calculateKepper(self, idx, t, T):
-        self.data.loc[idx, 'keppar'] = self.calculateMiu(idx, t, T) / self.calculateMiu(idx, t-1, T-1) - 1
-
-    def loadDailyReturn(self):
-        for idx, item in self.data.iterrows():
-            try:
-                self.data.loc[idx, 'R'] = self.data.loc[idx, 'Last Trade'] - self.data.loc[idx-1, 'Last Trade']
-            except:
-                pass
-
-        for idx, item in self.data_comparison.iterrows():
-            try:
-                self.data_comparison.loc[idx, 'R'] = self.data_comparison.loc[idx, 'Last Trade'] \
-                                                     - self.data_comparison.loc[idx-1, 'Last Trade']
-            except:
-                pass
-
-    def keppar(self, term=10, ti=5, draw=False):
-        self.loadDailyReturn()
-
-        for idx, item in self.data.iterrows():
-            try:
-                self.calculateTtest(idx, ti, term)
-                self.calculateKepper(idx, ti, term)
-            except:
-                pass
-
-
-        for idx, item in self.data.iterrows():
-            self.data.loc[idx, 'keppar_Enable'] = -0.3 < self.data.loc[idx, 'keppar'] and 0.3 > self.data.loc[
-                idx, 'keppar']
-            self.data.loc[idx, 'keppar_Buy'] = (self.data.loc[idx, 'tTest'] > 1.8) * self.data.loc[idx, 'keppar_Enable']
-            self.data.loc[idx, 'keppar_Sell'] = (self.data.loc[idx, 'tTest'] < 1.8 or \
-                                                 (self.data.loc[idx, 'tTest'] < 0 and self.data.loc[
-                                                     idx - 1, 'tTest'] > 0) or \
-                                                 (self.data.loc[idx, 'tTest'] > 3 and self.data.loc[
-                                                     idx - 1, 'tTest'] < 3) or \
-                                                 (self.data.loc[idx, 'tTest'] < -3 and self.data.loc[
-                                                     idx - 1, 'tTest'] > -3)) * self.data.loc[idx, 'keppar_Enable']
-
-        if draw == True:
-            self.data[['Last Trade']].plot(figsize=(12, 6))
-            plt2 = plt.twinx()
-            plt2.set_ylim(-10, 10)
-            plt2.plot(self.data['keppar'], 'y-', markersize=1)
-            plt2.plot(self.data['tTest'], 'g-', markersize=1)
-            plt2.plot(self.data['keppar_Buy'], 'bo', markersize=1)
-            plt2.plot(self.data['keppar_Sell'], 'ro', markersize=1)
-            plt.title('Keppar')
-            plt.ylabel('Left - Value; Right - Buy = blue, Sell = red')
-            plt.show()
-
-
 class Indicator:
     def __init__(self, filename, limit=0):
         self.data = pd.read_csv(filename)
@@ -293,7 +200,6 @@ class Indicator:
 
 def main():
     filename = "./data/Equities_200.csv"
-    filename_c = "./data/predict-0088.HK.csv"
     x = Indicator(filename,limit=2000)
     #x.bollinger(1.5, True)
     #x.mean_reversion(0.09, True)
@@ -301,8 +207,7 @@ def main():
     #x.ma(True)
     #x.rsi(14, 20, show=True)
     #x.kdj(True)
-    #x2 = Indikeppar(filename, filename_c)
-    #x2.keppar(draw=True)
+
 
 
 if __name__ == '__main__':
