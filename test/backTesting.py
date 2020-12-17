@@ -1,5 +1,5 @@
 from backtesting import Backtest, Strategy
-from indicators import Indicator, Indikeppar
+from indicators import Indicator
 import pandas as pd
 import numpy as np
 import csv
@@ -16,6 +16,14 @@ def removeBreakTimes(path):
     input.close()
     output.close()
     return outpath
+
+def addTimeHeader(path):
+    f = open(path, 'r')
+    r = 'Time' + f.read()
+    f.close()
+    f = open(path, 'w')
+    f.write(r)
+    f.close()
 
 def loadStockData(path):
     # load the data, generate a DataFrame with the data time for index
@@ -39,6 +47,8 @@ def loadStockData(path):
 
     stock = pd.DataFrame(maindata_adjusted, index=pd.DatetimeIndex(dates_adjusted),
                          columns=['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume'])
+    stock.to_csv('temp.csv')
+    addTimeHeader('temp.csv')
     return stock
 
 def LOAD(arr):
@@ -56,8 +66,8 @@ class UnifiedStrategy(Strategy):
         #x.ma()
         x.rsi(14,20)
         x.kdj()
-        x2 = Indikeppar('./data/Equities_27.csv','./data/Equities_200.csv',limit_data)
-        x2.keppar(20, 10)
+        #x2 = Indikeppar('./data/Equities_27.csv','./data/Equities_200.csv',limit_data)
+        #x2.keppar(20, 10)
 
         # Input: array of the buy&sell signal
         # BOLLINGER
@@ -85,16 +95,16 @@ class UnifiedStrategy(Strategy):
         self.b_kdj = self.I(LOAD, self.buyS_kdj, name='buySIGNAL_kdj')
 
         # keppar
-        self.buyS_keppar = x2.data['keppar_Buy'].to_numpy()
-        self.sellS_keppar = x2.data['keppar_Sell'].to_numpy()
-        self.s_keppar = self.I(LOAD, self.sellS_keppar, name='sellSIGNAL_keppar')
-        self.b_keppar = self.I(LOAD, self.buyS_keppar, name='buySIGNAL_keppar')
+        #self.buyS_keppar = x2.data['keppar_Buy'].to_numpy()
+        #self.sellS_keppar = x2.data['keppar_Sell'].to_numpy()
+        #self.s_keppar = self.I(LOAD, self.sellS_keppar, name='sellSIGNAL_keppar')
+        #self.b_keppar = self.I(LOAD, self.buyS_keppar, name='buySIGNAL_keppar')
 
         # signal weighting
         self.s = 0
         self.b = 0
-        self.s += 0 * self.s_boll + 0 * self.s_macd + 0 * self.s_rsi + 0 * self.s_kdj + 1 * self.s_keppar
-        self.b += 0 * self.b_boll + 0 * self.b_macd + 0 * self.b_rsi + 0 * self.b_kdj + 1 * self.b_keppar
+        self.s += 0 * self.s_boll + 0 * self.s_macd + 0 * self.s_rsi + 0 * self.s_kdj# + 1 * self.s_keppar
+        self.b += 0 * self.b_boll + 0 * self.b_macd + 0 * self.b_rsi + 0 * self.b_kdj# + 1 * self.b_keppar
 
     def next(self):
         if self.s >= 1:
