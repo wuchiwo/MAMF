@@ -12,8 +12,22 @@ feature_keys = [
     'VOL'
 ]
 
+colors = [
+    "blue",
+    "orange",
+    "green",
+    "red",
+    "purple",
+    "brown",
+    "pink",
+    "gray",
+    "olive",
+    "cyan",
+]   
+
 predict_key = 'Last Trade'
 date_key = 'Time'
+date_format = '%Y/%m/%d %H:%M'
 
 split_fraction = 0.85
 past = 798
