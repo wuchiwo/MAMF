@@ -76,17 +76,16 @@ class Indikeppar:
 
 
         for idx, item in self.e1_data.iterrows():
-            self.outdata.loc[idx, 'keppar_Enable'] = -0.3 < self.outdata.loc[idx, 'keppar'] and 0.3 > self.outdata.loc[
-                idx, 'keppar']
+            keppar = self.outdata.loc[idx, 'keppar']
+            tTest = self.outdata.loc[idx, 'tTest']
+            tTest_prev = self.outdata.loc[idx, 'tTest']
+            enable_keppar = -0.3 < keppar and 0.3 > keppar
             # LASB = Long A Short B, SALB = Short A Long B
-            self.outdata.loc[idx, 'kp_LASB'] = (self.outdata.loc[idx, 'tTest'] > 1.8) * self.outdata.loc[idx, 'keppar_Enable']
-            self.outdata.loc[idx, 'kp_SALB'] = (self.outdata.loc[idx, 'tTest'] < 1.8) * self.outdata.loc[idx, 'keppar_Enable']
-            self.outdata.loc[idx, 'kp_close'] = ((self.outdata.loc[idx, 'tTest'] < 0 and self.outdata.loc[
-                                                     idx - 1, 'tTest'] > 0) or \
-                                                 (self.outdata.loc[idx, 'tTest'] > 3 and self.outdata.loc[
-                                                     idx - 1, 'tTest'] < 3) or \
-                                                 (self.outdata.loc[idx, 'tTest'] < -3 and self.outdata.loc[
-                                                     idx - 1, 'tTest'] > -3)) * self.outdata.loc[idx, 'keppar_Enable']
+            self.outdata.loc[idx, 'kp_LASB'] = (tTest > 1.8) * enable_keppar
+            self.outdata.loc[idx, 'kp_SALB'] = (tTest < 1.8) * enable_keppar
+            self.outdata.loc[idx, 'kp_close'] = ((tTest < 0 and tTest_prev > 0) or \
+                                                 (tTest > 3 and tTest_prev < 3) or \
+                                                 (tTest < -3 and tTest_prev > -3)) * enable_keppar
 
     def draw(self):
         plt.figure(figsize=(12, 6))

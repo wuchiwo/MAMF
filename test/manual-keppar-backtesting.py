@@ -8,16 +8,19 @@ class KepparExecute:
         self.test_limit = test_limit
         self.init_asset = init_asset
         self.asset = init_asset
+        self.current_holding = init_asset
         self.commission = commission
         self.data = data
         self.equities = {'E1' : 0, 'E2' : 0}
-        self.ignore = ignore
-        self.log = log
+        self.ignore = ignore # some initial data contains null values, hence needs to be purged
+        self.log = log # set option to log or not
     
+    # Long the asset
     def long_(self, idx, equity, size):
         self.equities[equity] += size
         self.asset -= (self.get(idx, equity) * size)
 
+    # Short the asset
     def short_(self, idx, equity, size):
         self.equities[equity] -= size
         self.asset += (self.get(idx, equity) * size)
@@ -38,7 +41,7 @@ class KepparExecute:
             if count < self.ignore:
                 continue
             #size = min(self.asset/self.get(idx,'E1'),self.asset/self.get(idx,'E2'))
-            size = 1000
+            size = 100
             if self.get(idx, 'kp_close') or holding_period > 10:
                 self.close_(idx, ['E1', 'E2'])
                 holding_period = 0
@@ -60,8 +63,11 @@ class KepparExecute:
                     print(self.get(idx, 'Time'), 'SHORT E1@ %3.2f LONG E2@ %3.2f, size: %3d' % (self.get(idx, 'E1'), self.get(idx, 'E2'), size))
                     print('    Asset: %7d, E1: %4d, E2: %4d' % (self.asset, self.equities['E1'], self.equities['E2']))
             self.data.loc[idx,'E1_qty'] = self.equities['E1']
-            self.data.loc[idx,'asset'] = self.asset
+            self.current_holding = self.equities['E1'] * self.get(idx, 'E1') + self.equities['E2'] * self.get(idx, 'E2') + self.asset
+            print(self.get(idx, 'Time'), 'Current holding:', self.current_holding)
+            self.data.loc[idx,'cur_hold'] = self.current_holding
         self.close_(idx, ['E1', 'E2'])
+        print(self.data)
         print('FINAL ASSET VALUATION:', self.asset)
         print('PROFIT/LOSS          : %3.2f%%' % (100 * self.asset / self.init_asset - 100))
 
@@ -73,19 +79,19 @@ class KepparExecute:
         eq2.plot(self.data['E2'], 'b-')
         hold.set_title('E1 Holding Size (E2 = -E1)')
         hold.plot(self.data['E1_qty'])
-        value.set_title('Asset Valuation')
-        value.plot(self.data['asset'])        
+        value.set_title('Current holding')
+        value.plot(self.data['cur_hold'])
         plt.show()
 
 def main():
-    limit = 120
+    limit = 1000
     ignore_first = 60
     init_asset = 100000
     commission = 0.001
     draw = False
 
-    equity_1 = "./data/Equities_880.csv"
-    equity_2 = "./data/Equities_200.csv"
+    equity_2 = "./data/Equities_27_raw.csv"
+    equity_1 = "./data/Equities_2282.csv"
     indicator = Indikeppar(equity_1, equity_2, limit)
 
     #daily_1 = "temp-disposal/0880.HK.csv"
@@ -97,7 +103,7 @@ def main():
     data = indicator.getOutData()
     print(data)
 
-    k = KepparExecute(data, limit, init_asset, commission, ignore_first, log=True)   
+    k = KepparExecute(data, limit, init_asset, commission, ignore_first, log=False)   
     k.run()
     k.draw()
 
