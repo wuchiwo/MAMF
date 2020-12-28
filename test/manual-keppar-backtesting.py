@@ -3,9 +3,9 @@ from indikeppar import Indikeppar
 import matplotlib.pyplot as plt
 import datetime
 
+# ADD: CALC CURRENT BALANCE, COMPARE WITH ASSET
 class KepparExecute:
-    def __init__(self, data, test_limit, init_asset, commission, ignore, log):
-        self.test_limit = test_limit
+    def __init__(self, data, init_asset, commission, ignore, log):
         self.init_asset = init_asset
         self.asset = init_asset
         self.current_holding = init_asset
@@ -42,32 +42,39 @@ class KepparExecute:
                 continue
             #size = min(self.asset/self.get(idx,'E1'),self.asset/self.get(idx,'E2'))
             size = 100
-            if self.get(idx, 'kp_close') or holding_period > 10:
+            if self.get(idx, 'kp_close') or holding_period > 20:
                 self.close_(idx, ['E1', 'E2'])
                 holding_period = 0
                 if self.log:
                     print(self.get(idx, 'Time'), 'CLOSE POSITION')
                     print('    Asset: %7d, E1: %4d, E2: %4d' % (self.asset, self.equities['E1'], self.equities['E2']))
             elif self.get(idx, 'kp_LASB'):
-                self.long_(idx, 'E1', size)
-                self.short_(idx, 'E2', size)
                 holding_period += 1
-                if self.log:
-                    print(self.get(idx, 'Time'), 'LONG E1@ %3.2f SHORT E2@ %3.2f, size: %3d' % (self.get(idx, 'E1'), self.get(idx, 'E2'), size))
-                    print('    Asset: %7d, E1: %4d, E2: %4d' % (self.asset, self.equities['E1'], self.equities['E2']))
+                if self.asset < 0 and self.asset < -self.current_holding or \
+                    self.asset > 0 and self.asset > self.current_holding:
+                    pass
+                else:
+                    self.long_(idx, 'E1', size)
+                    self.short_(idx, 'E2', size)
+                    if self.log:
+                        print(self.get(idx, 'Time'), 'LONG E1@ %3.2f SHORT E2@ %3.2f, size: %3d' % (self.get(idx, 'E1'), self.get(idx, 'E2'), size))
+                        print('    Asset: %7d, E1: %4d, E2: %4d' % (self.asset, self.equities['E1'], self.equities['E2']))
             elif self.get(idx, 'kp_SALB'):
-                self.short_(idx, 'E1', size)
-                self.long_(idx, 'E2', size)
                 holding_period += 1
-                if self.log:
-                    print(self.get(idx, 'Time'), 'SHORT E1@ %3.2f LONG E2@ %3.2f, size: %3d' % (self.get(idx, 'E1'), self.get(idx, 'E2'), size))
-                    print('    Asset: %7d, E1: %4d, E2: %4d' % (self.asset, self.equities['E1'], self.equities['E2']))
+                if self.asset < 0 and self.asset < -self.current_holding or \
+                    self.asset > 0 and self.asset > self.current_holding:
+                    pass
+                else:
+                    self.short_(idx, 'E1', size)
+                    self.long_(idx, 'E2', size)
+                    if self.log:
+                        print(self.get(idx, 'Time'), 'SHORT E1@ %3.2f LONG E2@ %3.2f, size: %3d' % (self.get(idx, 'E1'), self.get(idx, 'E2'), size))
+                        print('    Asset: %7d, E1: %4d, E2: %4d' % (self.asset, self.equities['E1'], self.equities['E2']))
             self.data.loc[idx,'E1_qty'] = self.equities['E1']
             self.current_holding = self.equities['E1'] * self.get(idx, 'E1') + self.equities['E2'] * self.get(idx, 'E2') + self.asset
-            print(self.get(idx, 'Time'), 'Current holding:', self.current_holding)
+            print(self.get(idx, 'Time'), 'Current holding:', self.current_holding, 'Asset:', self.asset)
             self.data.loc[idx,'cur_hold'] = self.current_holding
         self.close_(idx, ['E1', 'E2'])
-        print(self.data)
         print('FINAL ASSET VALUATION:', self.asset)
         print('PROFIT/LOSS          : %3.2f%%' % (100 * self.asset / self.init_asset - 100))
 
@@ -97,13 +104,13 @@ def main():
     #daily_1 = "temp-disposal/0880.HK.csv"
     #daily_2 = "temp-disposal/0200.HK.csv"
     #indicator = Indikeppar(daily_1, daily_2, limit=0)
-    indicator.keppar()
+    indicator.keppar(term=40, ti=39)
     if draw == True:
         indicator.draw()
     data = indicator.getOutData()
     print(data)
 
-    k = KepparExecute(data, limit, init_asset, commission, ignore_first, log=False)   
+    k = KepparExecute(data, init_asset, commission, ignore_first, log=True)   
     k.run()
     k.draw()
 

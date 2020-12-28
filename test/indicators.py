@@ -30,11 +30,12 @@ class Indicator:
     def bollinger(self, sigma=2, show=False):
         self.trend(ma=50)
         for idx, item in self.data.iterrows():
+            last_trade = self.data.loc[idx, 'Last Trade']
             self.data['Upper Band'] = self.data['20MA'] + (self.data['20STD'] * sigma)
             self.data['Lower Band'] = self.data['20MA'] - (self.data['20STD'] * sigma)
-            self.data.loc[idx, 'Bollinger_Buy'] = (self.data.loc[idx, 'Last Trade'] <= self.data.loc[idx, 'Lower Band']) * \
+            self.data.loc[idx, 'Bollinger_Buy'] = (last_trade <= self.data.loc[idx, 'Lower Band']) * \
                                                   self.data.loc[idx, 'Trend_bull']
-            self.data.loc[idx, 'Bollinger_Sell'] = (self.data.loc[idx, 'Last Trade'] >= self.data.loc[idx, 'Upper Band']) * \
+            self.data.loc[idx, 'Bollinger_Sell'] = (last_trade >= self.data.loc[idx, 'Upper Band']) * \
                                                    self.data.loc[idx, 'Trend_bear']
         if show == True:
             self.data[['Last Trade', '20MA', 'Upper Band', 'Lower Band']].plot(figsize=(12, 6))
@@ -201,9 +202,9 @@ class Indicator:
 def main():
     filename = "./data/Equities_200.csv"
     x = Indicator(filename,limit=2000)
-    #x.bollinger(1.5, True)
+    x.bollinger(1.5, True)
     #x.mean_reversion(0.09, True)
-    x.macd(True,14,100)
+    #x.macd(True,14,100)
     #x.ma(True)
     #x.rsi(14, 20, show=True)
     #x.kdj(True)

@@ -19,7 +19,7 @@ class Indikeppar:
         if type_ == 'A':
             for i in range(T+1):
                 P *= (1 + self.e1_data.loc[idx - i, 'R'])
-        else:
+        elif type_ == 'B':
             for i in range(T+1):
                 P *= (1 + self.e2_data.loc[idx - i, 'R'])
         return math.log(P)
@@ -76,16 +76,21 @@ class Indikeppar:
 
 
         for idx, item in self.e1_data.iterrows():
+            close_condition = 3 #if tTest passes +- 3
+            tTest_threshold = 1.8
             keppar = self.outdata.loc[idx, 'keppar']
             tTest = self.outdata.loc[idx, 'tTest']
-            tTest_prev = self.outdata.loc[idx, 'tTest']
+            try:
+                tTest_prev = self.outdata.loc[idx - 1, 'tTest']
+            except:
+                tTest_prev = self.outdata.loc[idx, 'tTest']
             enable_keppar = -0.3 < keppar and 0.3 > keppar
             # LASB = Long A Short B, SALB = Short A Long B
-            self.outdata.loc[idx, 'kp_LASB'] = (tTest > 1.8) * enable_keppar
-            self.outdata.loc[idx, 'kp_SALB'] = (tTest < 1.8) * enable_keppar
+            self.outdata.loc[idx, 'kp_LASB'] = (tTest > tTest_threshold) * enable_keppar
+            self.outdata.loc[idx, 'kp_SALB'] = (tTest < tTest_threshold) * enable_keppar
             self.outdata.loc[idx, 'kp_close'] = ((tTest < 0 and tTest_prev > 0) or \
-                                                 (tTest > 3 and tTest_prev < 3) or \
-                                                 (tTest < -3 and tTest_prev > -3)) * enable_keppar
+                                                 (tTest > close_condition and tTest_prev < close_condition) or \
+                                                 (tTest < -close_condition and tTest_prev > -close_condition)) * enable_keppar
 
     def draw(self):
         plt.figure(figsize=(12, 6))
