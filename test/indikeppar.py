@@ -42,12 +42,18 @@ class Indikeppar:
         return sigma
 
     def calculateTtest(self, idx, t, T):
-        tTest = (self.calculateS(idx, T) - self.calculateMiu(idx, t, T)) \
+        try:
+            tTest = (self.calculateS(idx, T) - self.calculateMiu(idx, t, T)) \
                                       / self.calculateSigma(idx, t, T)
+        except ZeroDivisionError:
+            tTest = 0
         return tTest
 
     def calculateKeppar(self, idx, t, T):
-        keppar = self.calculateMiu(idx, t, T) / self.calculateMiu(idx, t-1, T-1) - 1
+        try:
+            keppar = self.calculateMiu(idx, t, T) / self.calculateMiu(idx, t-1, T-1) - 1
+        except ZeroDivisionError:
+            keppar = 0
         return keppar
 
     def loadDailyReturn(self):
