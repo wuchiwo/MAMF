@@ -4,8 +4,8 @@ from datetime import datetime as dt
 import matplotlib.pyplot as plt
 import numpy as np
 
-#stocks = ['27', '200', '880', '2282']
-stocks = ['27']
+stocks = ['27', '200', '880', '2282']
+#stocks = ['27']
 date_key = 'Time'
 price_key = 'Last Trade'
 date_format = '%Y/%m/%d %H:%M'
