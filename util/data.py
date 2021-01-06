@@ -9,9 +9,9 @@ stocks = ['27', '200', '880', '2282']
 date_key = 'Time'
 price_key = 'Last Trade'
 date_format = '%Y/%m/%d %H:%M'
-mei_file = 'data/raw/mei.csv'
-stock_file = 'data/raw/Equities_%s.csv'
-train_file = 'data/train/Equities_%s.csv'
+mei_file = '../data/raw/mei.csv'
+stock_file = '../data/raw/Equities_%s.csv'
+train_file = '../data/train/Equities_%s.csv'
 
 def beta_diff(stock_price, market_price, window):
     result = pd.Series(np.zeros(len(stock_price)))
@@ -45,20 +45,23 @@ def rsi(price, window):
     rs = gain.ewm(span=window, min_periods=window).mean() / loss.abs().ewm(span=window, min_periods=window).mean()
     return 100 - 100 / (1 + rs)
   
-def data_preprocessing():
-    mei_data = read_data(mei_file)
+def data_preprocessing(rawdata: DataFrame) -> DataFrame:
+    # mei_data = read_data(mei_file)
+    mei_data = rawdata
     mei_rsi = rsi(price=mei_data['Last Trade'], window=20).fillna(0)
-    for stock in stocks:
-        data = read_data(stock_file % stock)
-        data['MA1'] = data['Last Trade'].rolling(window=5).mean().fillna(0)
-        data['MA2'] = data['Last Trade'].rolling(window=8).mean().fillna(0)
-        data['MA3'] = data['Last Trade'].rolling(window=13).mean().fillna(0)
-        data['EMA1'] = data['Last Trade'].ewm(span=5, min_periods=5).mean().fillna(0)
-        data['EMA2'] = data['Last Trade'].ewm(span=8, min_periods=8).mean().fillna(0)
-        data['EMA3'] = data['Last Trade'].ewm(span=13, min_periods=13).mean().fillna(0)
-        data['MEI RSI'] = mei_rsi.fillna(0) 
-        data['Beta Diff'] = beta_diff(data['Last Trade'], mei_data['Last Trade'][:len(data)], window=20)
-        data.to_csv(path_or_buf=train_file % stock, date_format=date_format, index=False)
+    # for stock in stocks:
+    # data = read_data(stock_file % stock)
+    data = pd.DataFrame(rawdata)
+    data['MA1'] = data['Last Trade'].rolling(window=5).mean().fillna(0)
+    data['MA2'] = data['Last Trade'].rolling(window=8).mean().fillna(0)
+    data['MA3'] = data['Last Trade'].rolling(window=13).mean().fillna(0)
+    data['EMA1'] = data['Last Trade'].ewm(span=5, min_periods=5).mean().fillna(0)
+    data['EMA2'] = data['Last Trade'].ewm(span=8, min_periods=8).mean().fillna(0)
+    data['EMA3'] = data['Last Trade'].ewm(span=13, min_periods=13).mean().fillna(0)
+    data['MEI RSI'] = mei_rsi.fillna(0) 
+    data['Beta Diff'] = beta_diff(data['Last Trade'], mei_data['Last Trade'][:len(data)], window=20)
+    # data.to_csv(path_or_buf=train_file % stock, date_format=date_format, index=False)
+    return data
 
 def read_data(file):
     date_parser = lambda x: dt.strptime(x, date_format)
@@ -118,7 +121,8 @@ def plot_data(data):
 
 def main():
     np.seterr('raise')
-    data_preprocessing()
+    mei_data = read_data(mei_file)
+    data_preprocessing(mei_data)
 
 if __name__ == '__main__':
     main()
