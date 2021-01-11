@@ -12,6 +12,7 @@ date_format = '%Y/%m/%d %H:%M'
 mei_file = 'data/raw/mei.csv'
 stock_file = 'data/raw/Equities_%s.csv'
 train_file = 'data/train/Equities_%s.csv'
+beta_file = 'data/raw/beta.csv'
 
 def beta_diff(stock_price, market_price, window):
     result = pd.Series(np.zeros(len(stock_price)))
@@ -45,53 +46,31 @@ def rsi(price, window):
     rs = gain.ewm(span=window, min_periods=window).mean() / loss.abs().ewm(span=window, min_periods=window).mean()
     return 100 - 100 / (1 + rs)
   
-def data_preprocessing():
+def gen_train_files():
     mei_data = read_data(mei_file)
     mei_rsi = rsi(price=mei_data['Last Trade'], window=20).fillna(0)
     for stock in stocks:
         data = read_data(stock_file % stock)
-        data['MA1'] = data['Last Trade'].rolling(window=5).mean().fillna(0)
-        data['MA2'] = data['Last Trade'].rolling(window=8).mean().fillna(0)
-        data['MA3'] = data['Last Trade'].rolling(window=13).mean().fillna(0)
         data['EMA1'] = data['Last Trade'].ewm(span=5, min_periods=5).mean().fillna(0)
         data['EMA2'] = data['Last Trade'].ewm(span=8, min_periods=8).mean().fillna(0)
         data['EMA3'] = data['Last Trade'].ewm(span=13, min_periods=13).mean().fillna(0)
         data['MEI RSI'] = mei_rsi.fillna(0) 
-        data['Beta Diff'] = beta_diff(data['Last Trade'], mei_data['Last Trade'][:len(data)], window=20)
         data.to_csv(path_or_buf=train_file % stock, date_format=date_format, index=False)
+
+def gen_beta_files():
+    mei_data = read_data(mei_file)
+    mei_rsi = rsi(price=mei_data['Last Trade'], window=20).fillna(0)
+    beta_data = pd.DataFrame(columns = ['Time'])
+    for stock in stocks:
+        data = read_data(stock_file % stock)
+        beta_data = pd.DataFrame(columns = ['Time'])
+        beta_data[stock] =  beta_diff(data['Last Trade'], mei_data['Last Trade'][:len(data)], window=20)
+    beta_data.to_csv(path_or_buf=beta_file, date_format=date_format, index=False)
 
 def read_data(file):
     date_parser = lambda x: dt.strptime(x, date_format)
     data = pd.read_csv(file, parse_dates=[date_key], date_parser=date_parser)
     return data
-
-# def format_data(data):
-
-#     def loadStockData(path):
-#     # load the data, generate a DataFrame with the data time for index
-#     readCSV = pd.read_csv(path)
-
-#     maindata = readCSV.to_numpy()[:, 1:].astype(np.float32)
-#     # Adjust the format to match Backtesting requirements (see pd.Dataframe())
-#     maindata_adjusted = np.zeros((len(maindata),6))
-#     for i in range(1,len(maindata)):
-#         maindata_adjusted[i,3] = maindata[i,0]
-#         maindata_adjusted[i,0] = maindata[i-1,0]
-#         maindata_adjusted[i,1] = max(maindata_adjusted[i,0], maindata_adjusted[i,3])
-#         maindata_adjusted[i,2] = min(maindata_adjusted[i,0], maindata_adjusted[i,3])
-#         maindata_adjusted[i,4] = maindata_adjusted[i,3]
-#     maindata_adjusted[:,5] = maindata[:,1]
-#     # LIMIT ROWS TO limit_data
-#     maindata_adjusted = maindata_adjusted[-limit_data:]
-
-#     dates = readCSV.to_numpy()[:, 0]
-#     dates_adjusted = dates[-limit_data:]
-
-#     stock = pd.DataFrame(maindata_adjusted, index=pd.DatetimeIndex(dates_adjusted),
-#                          columns=['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume'])
-#     stock.to_csv('temp.csv')
-#     addTimeHeader('temp.csv')
-#     return stock
 
 def plot_data(data):
     colors = ["blue","orange","green","red","purple","brown","pink","gray","olive","cyan"]
@@ -117,8 +96,8 @@ def plot_data(data):
     plt.show()
 
 def main():
-    np.seterr('raise')
-    data_preprocessing()
+    gen_train_files()
+    gen_beta_files()
 
 if __name__ == '__main__':
     main()
