@@ -125,4 +125,8 @@ def main():
     data_preprocessing(mei_data)
 
 if __name__ == '__main__':
-    main()
+    stocks = ['27', '200', '880', '2282']
+    for stock in stocks:
+        df = pd.read_csv('../data/train/Equities_%s.csv' % stock)
+        df = data_preprocessing(df)
+        df.to_csv('../data/Beta/Equities_%s.csv' % stock)

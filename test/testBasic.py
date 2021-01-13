@@ -1,4 +1,5 @@
-from backtesting import Backtest, Strategy
+# from backtesting import Backtest, Strateg
+import backtrader
 from indicators import Indicator
 import pandas as pd
 import numpy as np
@@ -57,7 +58,7 @@ def LOAD(arr):
     return pd.Series(arr)
 
 # strategy for KDJ
-class UnifiedStrategy(Strategy):
+class UnifiedStrategy(backtrader.Strategy):
     def init(self):
         x = Indicator('./data/Equities_27.csv',limit_data)
         x.bollinger(2.5)

@@ -1,12 +1,14 @@
 from datetime import datetime, time
 from datetime import timedelta
 import datetime
+from util.data import data_preprocessing
 import pandas as pd
 import numpy as np
 import backtrader as bt
 import os.path  # 管理路径
 import sys  # 发现脚本名字(in argv[0])
 import glob
+from testBasic import removeBreakTimes, addTimeHeader, loadStockData
 from backtrader.feeds import PandasData  # 用于扩展DataFeed
 
 from numpy import nan, ndarray, ones_like, vstack, random
@@ -58,68 +60,62 @@ class downside_beta_strategy(bt.Strategy):
     )
 
     def __init__(self):
-        self.beta_diffs = dict()
+        # self.beta_diff = self.datas[0].Beta_Diff
         self.lastRanks = []  # 上次交易股票的列表
         self.stocks = self.datas[1:]
         self.order_list = []
     
-    def notify_timer(self, timer, when, *args, **kwargs):
-        self.rebalance_portfolio()  # 执行再平衡
+    # def notify_timer(self, timer, when, *args, **kwargs):
+        # self.rebalance_portfolio()  # 执行再平衡
 
-    def rebalance_portfolio(self):
-        print('Next: ', self.datas[0])
+    def next(self):
+        # print('Next: ', self.datas[0])
+        # print(self.datas[0].tick_Beta_Diff)
         # pass if it is end of index.
         if len(self.datas[0]) == self.data0.buflen():
             return     
+        long_stock_beta = self.datas[0].tick_Beta_Diff
+        long_stock = 0
+        short_stock_beta = self.datas[0].tick_Beta_Diff
+        short_stock = 0
+        for i, d in enumerate(self.datas):
+            dt, dn = self.datetime.date(), d._name
+            if d.tick_Beta_Diff > long_stock_beta:
+                long_stock = i
+                long_stock_beta = d.tick_Beta_Diff
+            if d.tick_Beta_Diff < short_stock_beta:
+                short_stock = i
+                short_stock_beta = d.tick_Beta_Diff
+    
+        # get long/short by Beta_Diff.
 
-        # 取消以往所下订单（已成交的不会起作用）
-        for o in self.order_list:
-            self.cancel(o)
-        self.order_list = []  # 重置订单列表
-        
-        # Rank those 6 stocks by beta diff
-        self.ranks = [d for d in self.stocks if
-                      len(d) > 0  
-                      ]
-
-        # get long/short by beta diff.
-        short_stock = min(r['Beta Diff'] for r in self.datas)
-        long_stock  = max(r['Beta Diff'] for r in self.datas)
-
-        if  len(long_stock) > 1 or len(short_stock) > 1 :
-            return # hold if multiple stock hits the criteria
+        if long_stock == short_stock:
+            pass
 
         # All-in and All out
         # Short current stock first
         # check if last 
-        print('sell ', short_stock[0]._name, self.getposition(short_stock[0]).size)
-        o = self.close(data=short_stock[0])            
-        self.order_list.append(o) # log the order
-        
-        # save 2 % cash for commissions and trading fee.
-        target_price = 0.98 * self.broker.getvalue()
+        if self.getposition(self.datas[short_stock]).size > 0:
+            # print('sell ', short_stock._name,
+            #       self.getposition(short_stock).size)
+            self.order = self.sell(data=self.datas[short_stock], size=self.getposition(self.datas[short_stock]).size)
+
 
         # 得到当前的账户价值
-        total_value = self.broker.getvalue()
-            #获取仓位
-        pos = self.getposition(data).size
-        target_size = total_value * 0.98 / (pos * 1.12) / self.p.board_size
-        print('buy ', long_stock[0]._name, self.getposition(short_stock[0]).size)
-        o = self.buy(data=long_stock[0], size=target_size * self.p.board_size, price=pos*1.12)            
-        self.order_list.append(o) # log the order
-        # if not pos and data._name in long_stock and \
-        #     self.mas[data._name][0]>data.close[0]:
-        #     size=int(p_value/100/data.close[0])*100
-        #     self.buy(data = data, size = size) 
-
-        # if pos!=0 and data._name not in long_stock or \
-        #     self.mas[data._name][0]<data.close[0]:
-        #     self.close(data = data)                        
+        total_value = self.broker.get_cash() * 0.98
+        #获取仓位
+        price = self.datas[long_stock][0]
+        target_size = round(total_value / (price * 1.02), 0)
+        buy_total = price * target_size
+        # print('buy ', long_stock._name, target_size * self.p.board_size)
+        if total_value > buy_total * 1.02 : 
+            self.order=self.buy(data=self.datas[long_stock], size=target_size)
 
     def log(self, txt, dt=None,doprint=False):
+        pass
         if self.params.printlog or doprint:
             dt = dt or self.datas[0].datetime.date(0)
-            print(f'{dt.isoformat()},{txt}')
+            print(f'{dt},{txt}')
 
     #记录交易执行情况（可省略，默认不输出结果）
     def notify_order(self, order):
@@ -144,14 +140,13 @@ class downside_beta_strategy(bt.Strategy):
 
         # 如果指令取消/交易失败, 报告结果
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log('Transaction failed')
+            self.log('Transaction failed. Status: ', order.Status[order.status], order.ordtype)
         self.order = None
 
     #记录交易收益情况（可省略，默认不输出结果）
     def notify_trade(self,trade):
-        pass
-        # if not trade.isclosed:
-        #     return
+        if not trade.isclosed:
+            return
         # self.log(f'策略收益：\n毛收益 {trade.pnl:.2f}, 净收益 {trade.pnlcomm:.2f}')
 
 
@@ -167,32 +162,36 @@ maxstocknum = 6
 datafilelist = datafilelist[0:maxstocknum]  # 截取指定数量的股票池
 print(datafilelist)
 # Data preprocess
-for fname in datafilelist:
-    print(fname)
-    if fname.find('mei'):
-        continue
-    # data = bt.feeds.GenericCSVData(dataname=fname, datetime=0, open=1, volume=2, kwargs = dict(
-    #     timeframe=bt.TimeFrame.Minutes,
-    #     compression=5,
-    #     sessionstart=datetime.time(9, 0),
-    #     sessionend=datetime.time(17, 30),
-    # ))
-    data = bt.feeds.GenericCSVData(
-            dataname=fname,
-            datetime=0,
-            fromdate=datetime.datetime(2020, 9, 24),
-            timeframe=bt.TimeFrame.Minutes,
-            dtformat=('%d-%m-%Y %H:%M'),
-            open=1,
-            high=-1,
-            low=-1,
-            close=-1,
-            volume=2,
-            openinterest=-1)
-    print(data.tail(20))
-    data = dt.data_preprocessing(data)
-    
-    cerebro.adddata(data, name=fname[11:-4])
+stocks = ['27', '200', '880', '2282']
+
+
+class OandaCSVData(bt.feeds.GenericCSVData):
+    lines = ('Beta_Diff',)
+    params = (
+        ('nullvalue', float('NaN')),
+        ('dtformat', '%Y/%m/%d %H:%M'),
+        ('datetime', 0),
+        ('time', -1),
+        ('open', 1),
+        ('high', 1),
+        ('low', 1),
+        ('close', 1),
+        ('volume', 2),
+        ('Beta_Diff', 8),
+    )    # Add a 'pe' line to the inherited ones from the base class
+
+for stock in stocks:
+    print(stock)
+    # path = removeBreakTimes(stock)
+    # Load your stock data through this function
+    # The data must contain value of 'Open','High','Low','Close', although you may not use it for strategy
+    # stockData = loadStockData(path)
+    # print(stockData['Open'].items())
+    # stockData['Last Trade'] = stockData['Open']
+    # data = pd.read_csv(stockData)
+   
+    data = OandaCSVData(dataname='data/train/Equities_%s.csv' % stock, Beta_Diff=10)
+    cerebro.adddata(data, name=stock)
 
 cerebro.addstrategy(downside_beta_strategy)
 startcash = 10000000
