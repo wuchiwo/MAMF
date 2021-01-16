@@ -5,13 +5,12 @@ from datetime import datetime
 import sys
 import pandas as pd
 
-
 class stampDutyCommissionScheme(bt.CommInfoBase):
     params = (
         ('stamp_duty', 0.001), 
         ('commission', 160),  
         ('stocklike', True),
-        ('commtype', bt.CommInfoBase.COMM_PERC),
+        ('commtype', bt.CommInfoBase.COMM_PERC)
     )
 
     def _getcommission(self, size, price, pseudoexec):
@@ -22,11 +21,13 @@ class stampDutyCommissionScheme(bt.CommInfoBase):
         else:
             return 0  # just in case for some reason the size is 0.
 
-
 class BetaStrategy(bt.Strategy):
 
     params = (
         ('printlog', True),
+        ('min_RSI', 70),
+        ('short_RSI', 30),
+        ('is_short_RSI', True)
     )
     
     def __init__(self):
@@ -37,8 +38,15 @@ class BetaStrategy(bt.Strategy):
         if len(self.datas[0]) == self.data0.buflen():
             return
         mei_rsi = self.datas[0].close[0]
-        if mei_rsi > 70: # MEI_RSI > 70
+
+        if mei_rsi < self.p.min_RSI and mei_rsi > self.p.short_RSI: # MEI_RSI > 70 then run the strategy
             return
+        if mei_rsi < self.p.short_RSI and self.p.is_short_RSI:
+                # sell all positions
+            pos = self.getpositions()
+            for p in pos:
+                if p.size != 0:
+                    self.close(exectype=bt.Order.Stop)
         long_stock_beta = self.datas[0].tick_Beta_Diff
         long_stock = 0
         short_stock_beta = self.datas[0].tick_Beta_Diff
@@ -59,6 +67,7 @@ class BetaStrategy(bt.Strategy):
             o = self.sell(data=self.datas[short_stock])
         if self.broker.getcash() > self._sizer.p.stake * self.datas[long_stock].open:
             o = self.buy(data=self.datas[long_stock])
+
 
     def notify_trade(self, trade: bt.Trade):
         dt = self.data.datetime.date()
@@ -113,6 +122,8 @@ class OandaCSVData(bt.feeds.GenericCSVData):
     params = (
         ('nullvalue', float('NaN')),
         ('dtformat', '%Y/%m/%d %H:%M'),
+        ('timeframe', bt.TimeFrame.Minutes),
+        ('compression', 5),
         ('datetime', 0),
         ('time', -1),
         ('open', 1),
@@ -120,36 +131,36 @@ class OandaCSVData(bt.feeds.GenericCSVData):
         ('low', 1),
         ('close', 9),
         ('volume', 2),
-        ('Beta_Diff', 10),
+        ('Beta_Diff', 7),
     )    # Add a 'pe' line to the inherited ones from the base class
 
 if __name__ == '__main__':
-    import sys
-    sys.stdout = open('Beta_test.txt', 'w')
-    stocks = ['27', '200', '880', '2282']
+    stocks = ['27', '200', '880', '2282', '1128', '1928']
     startcash = 1000000
     cerebro = bt.Cerebro()
     cerebro.broker.setcash(startcash)
+    cerebro.addobserver(bt.observers.Broker)
+    cerebro.addobserver(bt.observers.Trades)
+    cerebro.addobserver(bt.observers.BuySell)
+    cerebro.addwriter(bt.WriterFile, out='downside_beta_test_30.txt')
     cerebro.broker.setcommission(commission=0.001)
     cerebro.addstrategy(BetaStrategy)
 
     for stock in stocks:
         data = OandaCSVData(dataname='data/train/Equities_%s.csv' %
-                            stock, close=9, Beta_Diff=10)
+                            stock, close=6, Beta_Diff=7)
         cerebro.adddata(data, name=stock)
     print(cerebro.broker.getvalue())
     cerebro.addsizer(sizercls=bt.sizers.FixedSize, stake=2000)
     # comminfo = stampDutyCommissionScheme()
     # cerebro.broker.addcommissioninfo(comminfo)
-    
-    cerebro.addwriter(bt.WriterFile, out='downside_beta_test.txt')
     cerebro.run()
-
+    # df = pd.DataFrame(list_r)
     portvalue = cerebro.broker.getvalue()
     pnl = portvalue - startcash
     print('Final Portfolio Value: ${}'.format(portvalue))
     print('P/L: ${}'.format(pnl))
     profit_rate = (pnl/startcash)*100
     print('Increment: {} %'.format(profit_rate))
-    figure = cerebro.plot(style='candlebars')[0][0]
-    figure.savefig('downside_beta_test.png')
+    figure = cerebro.plot(barup='line', bardown='red', valuetags=True, width=21, height=9, dpi=500)[0][0]
+    figure.savefig('downside_beta_test_30.png')

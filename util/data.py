@@ -4,7 +4,7 @@ from datetime import datetime as dt
 import matplotlib.pyplot as plt
 import numpy as np
 
-stocks = ['27', '200', '880', '2282']
+stocks = ['27', '200', '880', '2282', '1128', '1928']
 #stocks = ['27']
 date_key = 'Time'
 price_key = 'Last Trade'
@@ -62,10 +62,11 @@ def gen_beta_files():
     mei_rsi = rsi(price=mei_data['Last Trade'], window=20).fillna(0)
     beta_data = pd.DataFrame(columns = ['Time'])
     for stock in stocks:
-        data = read_data(stock_file % stock)
-        beta_data = pd.DataFrame(columns = ['Time'])
-        beta_data[stock] =  beta_diff(data['Last Trade'], mei_data['Last Trade'][:len(data)], window=20)
-    beta_data.to_csv(path_or_buf=beta_file, date_format=date_format, index=False)
+        data = read_data(train_file % stock)
+        # beta_data = pd.DataFrame(columns = ['Time'])
+        data["Beta Diff"] =  beta_diff(data['Last Trade'], mei_data['Last Trade'][:len(data)], window=20)
+        data.to_csv(path_or_buf=train_file % stock,
+                     date_format=date_format, index=False)
 
 def read_data(file):
     date_parser = lambda x: dt.strptime(x, date_format)
